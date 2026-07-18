@@ -1,6 +1,27 @@
 import streamlit as st
 import requests
 
+def calculate_sensor_risk(rain, visibility):
+    # Convert text data to math-ready floats
+    rain_val = float(rain)
+    vis_val = float(visibility)
+    
+    # Simple algorithmic scoring rule
+    # High rain or very low visibility = High Risk
+    if rain_val > 5.0 or vis_val < 3.0:
+        return "High Risk"
+    
+    # Moderate rain or moderate visibility = Medium Risk
+    elif rain_val > 1.0 or vis_val < 8.0:
+        return "Medium Risk"
+    
+    # Clear conditions = Low Risk
+    else:
+        return "Low Risk"
+
+# YOUR TASK: Call this function using your live variables 
+# and display the result using st.metric()
+
 
 st.title("Waymo Dallas Weather-UX Dashboard")
 
@@ -32,4 +53,10 @@ weather_data = response.json()
 st.json(weather_data)
 
 current_temp = weather_data["current_condition"][0]["temp_F"]
+current_rain = weather_data["current_condition"][0]["precipMM"]
+current_visibility = weather_data["current_condition"][0]["visibility"]
 st.write(f"Current Temperature: {current_temp} degrees F")
+risk_level = calculate_sensor_risk(current_rain, current_visibility)
+st.metric(label="Waymo Sensor Risk Level ", value = risk_level)
+sdi_score = (float(current_rain) * 2) + (10/float(current_visibility))
+st.metric(label="SDI score", value=sdi_score)
