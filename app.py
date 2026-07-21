@@ -25,22 +25,6 @@ def calculate_sensor_risk(rain, visibility):
 
 st.title("Waymo Dallas Weather-UX Dashboard")
 
-# Fake data that mimics a real weather API response
-fake_weather_data = {
-    "city": "Dallas",
-    "main": {
-        "temperature_f": 98.5,
-        "humidity": 75
-    },
-    "weather_conditions": [
-        {"type": "Rain", "severity": "Heavy"}
-    ]
-}
-
-# YOUR TASK: Extract data from the dictionary above
-# Hint: To get the city, you would write: fake_weather_data["city"]
-st.write(fake_weather_data["main"]["temperature_f"])
-st.write(fake_weather_data["weather_conditions"][0]["severity"])
 
 # 1. Define the URL for Dallas weather in JSON format
 url = "https://wttr.in/Dallas?format=j1"
@@ -50,13 +34,33 @@ response = requests.get(url)
 
 # 3. Convert the response into a Python dictionary
 weather_data = response.json()
-st.json(weather_data)
 
+
+passenger_msg = ""
 current_temp = weather_data["current_condition"][0]["temp_F"]
 current_rain = weather_data["current_condition"][0]["precipMM"]
 current_visibility = weather_data["current_condition"][0]["visibility"]
-st.write(f"Current Temperature: {current_temp} degrees F")
 risk_level = calculate_sensor_risk(current_rain, current_visibility)
-st.metric(label="Waymo Sensor Risk Level ", value = risk_level)
 sdi_score = (float(current_rain) * 2) + (10/float(current_visibility))
-st.metric(label="SDI score", value=sdi_score)
+
+col1, col2 = st.columns(2)
+with col1:
+    st.subheader("Live Weather Telemetry")
+    st.write(f"Current Temperature: {current_temp} degrees F")
+    st.write(f"Current rain: {current_rain} mm")
+    st.write(f"Current visibility: {current_visibility}")
+with col2:
+    st.subheader("Sensor Risk Level")
+    st.metric(label="SDI score", value=sdi_score)
+    st.metric(label="Waymo Sensor Risk Level ", value = risk_level)
+    if sdi_score > 8.0:
+        passenger_msg = f"Waymo Alert: High risk detected due to heavy weather (Rain: {current_rain} mm, Visibility: {current_visibility} km). Safely pulling over."
+        st.error(passenger_msg)
+    elif sdi_score > 4.0:
+        passenger_msg = f"Waymo Alert: Caution advised. Adjusting operational speed (Rain: {current_rain} mm, Visibility: {current_visibility} km)."
+        st.warning(passenger_msg)
+    else:
+        passenger_msg = f"Waymo Alert: Conditions clear. Vehicle operating normally."
+        st.success(passenger_msg)
+
+    
